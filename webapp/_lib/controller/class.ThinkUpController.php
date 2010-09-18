@@ -294,15 +294,7 @@ abstract class ThinkUpController {
     private function initalizeApp() {
         if (get_class($this) != "InstallerController" ) {
             //Initialize config
-            $config = Config::getInstance();
-            if ($config->getValue('timezone')) {
-                date_default_timezone_set($config->getValue('timezone'));
-            }
-            if ($config->getValue('debug')) {
-                ini_set("display_errors", 1);
-                ini_set("error_reporting", E_ALL);
-            }
-
+            
             //Init plugins
             $pdao = DAOFactory::getDAO('PluginDAO');
             $active_plugins = $pdao->getActivePlugins();
