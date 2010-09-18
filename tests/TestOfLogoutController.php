@@ -24,9 +24,9 @@ class TestOfLogoutController extends ThinkUpUnitTestCase {
     }
 
     public function testLogoutWhileLoggedIn() {
-        $_SESSION['user'] = 'me@example.com';
+        $this->simulateLogin('me@example.com');
         $controller = new LogoutController(true);
         $results = $controller->go();
-        $this->assertTrue(strpos( $results, "You have successfully logged out") > 0 );
+        $this->assertPattern("/You have successfully logged out/", $results);
     }
 }

@@ -63,6 +63,22 @@ class TestOfPluginOptionController extends ThinkUpUnitTestCase {
 
     }
 
+    public function testNoProfilerOutput() {
+        // Enable profiler
+        $config = Config::getInstance();
+        $config->setValue('enable_profiler', true);
+        $_SERVER['HTTP_HOST'] = 'something';
+
+        $controller = $this->getController();
+        $_GET['action'] = 'set_options';
+        $results = $controller->go();
+        $json_resonse = json_decode($results);
+        // If the profiler outputs HTML (it shouldn't), the following will fail
+        $this->assertIsA($json_resonse, 'stdClass');
+
+        unset($_SERVER['HTTP_HOST']);
+    }
+
     /**
      * Test bad plugin id
      */
@@ -243,8 +259,7 @@ class TestOfPluginOptionController extends ThinkUpUnitTestCase {
      * get a plugin option controller
      */
     public function getController() {
-        $_SESSION['user'] = 'me@example.com';
-        $_SESSION['user_is_admin'] = true;
+        $this->simulateLogin('me@example.com', true);
         $config = Config::getInstance();
         $config->setValue('site_root_path', '/my/path/to/thinktank/');
         return new PluginOptionController(true);

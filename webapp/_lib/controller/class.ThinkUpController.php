@@ -33,11 +33,6 @@ abstract class ThinkUpController {
     private $start_time = 0;
     /**
      *
-     * @var Session
-     */
-    protected $app_session;
-    /**
-     *
      * @var araray
      */
     protected $header_scripts = array ();
@@ -106,8 +101,7 @@ abstract class ThinkUpController {
      * @return bool whether or not user is logged in
      */
     protected function isLoggedIn() {
-        //return (isset($_SESSION['user']) && $_SESSION['user']!= '') ? true : false;
-        return $this->app_session->isLoggedIn();
+        return Session::isLoggedIn();
     }
 
     /**
@@ -116,7 +110,7 @@ abstract class ThinkUpController {
      * @return bool whether or not logged-in user is an admin
      */
     protected function isAdmin() {
-        return $this->app_session->isAdmin();
+        return Session::isAdmin();
     }
 
     /**
@@ -125,11 +119,7 @@ abstract class ThinkUpController {
      * @return str email
      */
     protected function getLoggedInUser() {
-        if ($this->isLoggedIn()) {
-            return $_SESSION['user'];
-        } else {
-            return null;
-        }
+        return Session::getLoggedInUser();
     }
 
     /**
@@ -163,7 +153,7 @@ abstract class ThinkUpController {
         if (isset($this->view_template)) {
             if ($this->view_mgr->isViewCached()) {
                 $cache_key = $this->getCacheKeyString();
-                if ($this->profiler_enabled) {
+                if ($this->profiler_enabled && !isset($this->json_data) && strpos($this->content_type, 'text/javascript') === false) {
                     $view_start_time = microtime(true);
                     $cache_source = $this->shouldRefreshCache()?"DATABASE":"FILE";
                     $results = $this->view_mgr->fetch($this->view_template, $cache_key);
@@ -177,7 +167,7 @@ abstract class ThinkUpController {
                     return $this->view_mgr->fetch($this->view_template, $cache_key);
                 }
             } else {
-                if ($this->profiler_enabled) {
+                if ($this->profiler_enabled && !isset($this->json_data) && strpos($this->content_type, 'text/javascript') === false) {
                     $view_start_time = microtime(true);
                     $results = $this->view_mgr->fetch($this->view_template);
                     $view_end_time = microtime(true);
@@ -266,8 +256,8 @@ abstract class ThinkUpController {
     public function go() {
         try {
             $this->initalizeApp();
-            if ($this->profiler_enabled) {
-                $results = $this->control();
+            $results = $this->control();
+            if ($this->profiler_enabled && !isset($this->json_data) && strpos($this->content_type, 'text/javascript') === false) {
                 $end_time = microtime(true);
                 $total_time = $end_time - $this->start_time;
                 $profiler = Profiler::getInstance();
@@ -277,10 +267,25 @@ abstract class ThinkUpController {
                 $this->addToView('profile_items',$profiler->getProfile());
                 return  $results . $this->generateView();
             } else  {
-                return $this->control();
+                return $results;
             }
         } catch (Exception $e) {
-            $this->setViewTemplate('500.tpl');
+            date_default_timezone_set('America/Los_Angeles'); //Temporary fix to avoid Smarty warning
+            $content_type = $this->content_type;
+            if (strpos($content_type, ';') !== FALSE) {
+                $content_type = array_shift(explode(';', $content_type));
+            }
+            switch ($content_type) {
+                case 'application/json':
+                    $this->setViewTemplate('500.json.tpl');
+                    break;
+                case 'text/plain':
+                    $this->setViewTemplate('500.txt.tpl');
+                    break;
+                default:
+                    $this->setViewTemplate('500.tpl');
+            }
+            $this->addToView('error_type', get_class($e));
             $this->addErrorMessage($e->getMessage());
             return $this->generateView();
         }

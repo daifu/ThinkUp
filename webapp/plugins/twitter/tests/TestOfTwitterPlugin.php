@@ -46,10 +46,10 @@ class TestOfTwitterPlugin extends ThinkUpUnitTestCase {
 
         $post_tabs = $this->webapp->getChildTabsUnderPosts($instance);
 
-        $this->assertEqual(sizeof($post_tabs), 4, "Test number of post tabs");
+        $this->assertEqual(sizeof($post_tabs), 3, "Test number of post tabs");
         $first_post_tab = $post_tabs[0];
         $this->assertEqual($first_post_tab->short_name, "tweets-all", "Test short name of first post tab");
-        $this->assertEqual($first_post_tab->name, "All", "Test name of first post tab");
+        $this->assertEqual($first_post_tab->name, "All Tweets", "Test name of first post tab");
         $this->assertEqual($first_post_tab->description, "All tweets", "Test description of first post tab");
 
         $first_post_tab_datasets = $first_post_tab->getDatasets();
@@ -58,5 +58,26 @@ class TestOfTwitterPlugin extends ThinkUpUnitTestCase {
         $this->assertEqual($first_post_tab_dataset->dao_name, 'PostDAO');
         $this->assertEqual($first_post_tab_dataset->dao_method_name, "getAllPosts",
         "Test first post tab's first dataset fetching method");
+    }
+    
+    public function testGetChildTabsUnderLinks() {
+        $pd = DAOFactory::getDAO('PostDAO');
+        $instance = new Instance();
+        $instance->network_user_id = 1;
+
+        $links_tabs = $this->webapp->getChildTabsUnderLinks($instance);
+        $this->assertEqual(sizeof($links_tabs), 2);
+
+        $links_tab = $links_tabs[0];
+        $this->assertEqual($links_tab->short_name, "links-friends");
+        $links_tab_datasets = $links_tab->getDatasets();
+        $links_tab_dataset = $links_tab_datasets[0];
+        $this->assertEqual($links_tab_dataset->name, "links");
+                
+        $links_tab = $links_tabs[1];
+        $this->assertEqual($links_tab->short_name, "links-photos");
+        $links_tab_datasets = $links_tab->getDatasets();
+        $links_tab_dataset = $links_tab_datasets[0];
+        $this->assertEqual($links_tab_dataset->name, "links");
     }
 }

@@ -280,7 +280,7 @@ class TestOfPostMySQLDAO extends ThinkUpUnitTestCase {
         $dao = new PostMySQLDAO();
         $this->assertTrue(isset($dao));
     }
-    
+
     /**
      * Test getOrphanReplies
      */
@@ -342,6 +342,26 @@ class TestOfPostMySQLDAO extends ThinkUpUnitTestCase {
     }
 
     /**
+     * Test getMostRepliedToPostsIterator
+     */
+    public function testGetMostRepliedToPostsIterator() {
+        $dao = new PostMySQLDAO();
+        $posts_it = $dao->getMostRepliedToPostsIterator(13, 'twitter', 10);
+        $prev_count = 0;
+        $cnt = 0;
+        foreach ($posts_it as $post) {
+             if($cnt == 0) {
+                 $prev_count = $post->reply_count_cache;
+             }
+             $cnt++;
+            $this->assertTrue($post->reply_count_cache <= $prev_count, "previous count ".$prev_count.
+            " should be less than or equal to this post's count of ".$post->reply_count_cache);
+            $prev_count = $post->reply_count_cache;
+        }
+        $this->assertEqual($cnt, 10);
+    }
+
+    /**
      * Test getMostRetweetedPosts
      */
     public function testGetMostRetweetedPosts() {
@@ -381,6 +401,58 @@ class TestOfPostMySQLDAO extends ThinkUpUnitTestCase {
         $mentions = $dao->getAllMentions("jack", 10, 'twitter');
         $this->assertTrue(sizeof($mentions), 10);
         $this->assertEqual($mentions[0]->post_text, "Hey @ev and @jack should fix Twitter - post 9");
+    }
+
+    /**
+     * Test getAllMentionsIterator
+     */
+    public function testGetAllMentionsIterator() {
+        $dao = new PostMySQLDAO();
+        $mentions = $dao->getAllMentions("ev", 10, 'twitter');
+        $mentions_it = $dao->getAllMentionsIterator("ev", 10, 'twitter');
+        $cnt = 0;
+        foreach($mentions_it as $key => $value) {
+            $this->assertEqual($value->post_text,$mentions[$cnt]->post_text);
+            $cnt++;
+        }
+        $this->assertEqual($cnt, 10);
+
+        $mentions = $dao->getAllMentions("jack", 10, 'twitter');
+        $mentions_it = $dao->getAllMentionsIterator("jack", 10, 'twitter');
+        $cnt = 0;
+        foreach($mentions_it as $key => $value) {
+            $this->assertEqual($value->post_text,$mentions[$cnt]->post_text);
+            $cnt++;
+        }
+        $this->assertEqual($cnt, 10);
+    }
+
+    /**
+     * Test getMostRetweetedPostsIterator
+     */
+    public function testGetMostRetweetedPostsIterator() {
+        $dao = new PostMySQLDAO();
+        //Add posts with replies by user3, who is on the public timeline with retweet counts in the last 9 days
+        $counter = 0;
+        $id = 200;
+        $builders = array();
+        while ($counter < 40) {
+            $id += $counter;
+            $builders[] = FixtureBuilder::build('posts', array(
+                'id'=>$id, 
+                'post_id'=>(144+$counter),
+                'author_user_id'=>23,
+                'author_username'=>'user3',
+                'pub_date'=>'-'.$counter.'d',
+                'retweet_count_cache'=>$counter));
+            $counter++;
+        }
+        $posts_it = $dao->getMostRetweetedPostsIterator('user3', 'twitter', 5, 7);
+        $cnt = 0;
+        foreach($posts_it as $key => $value) {
+            $cnt++;
+        }
+        $this->assertEqual($cnt, 5);
     }
 
     /**
@@ -462,13 +534,30 @@ class TestOfPostMySQLDAO extends ThinkUpUnitTestCase {
         $posts = $dao->getAllPosts(18, 'twitter', 50);
         $this->assertEqual(sizeof($posts), 41);
 
+        //page 2
+        $posts = $dao->getAllPosts(18, 'twitter', 10, 2);
+        $this->assertEqual(sizeof($posts), 10);
+
         //less than count, no replies --there is 1 reply, so 41-1=40
-        $posts = $dao->getAllPosts(18, 'twitter', 50, false);
+        $posts = $dao->getAllPosts(18, 'twitter', 50, 1, false);
         $this->assertEqual(sizeof($posts), 40);
 
         //non-existent author
         $posts = $dao->getAllPosts(30, 'twitter', 10);
         $this->assertEqual(sizeof($posts), 0);
+    }
+
+    /**
+     * Test getAllPostsIterator
+     */
+    public function testGetAllPostIterators() {
+        $dao = new PostMySQLDAO();
+        $posts_it = $dao->getAllPostsIterator(18, 'twitter', 10);
+        $cnt = 0;
+        foreach($posts_it as $key => $value) {
+            $cnt++;
+        }
+        $this->assertEqual($cnt, 10);
     }
 
     /**
@@ -702,6 +791,7 @@ class TestOfPostMySQLDAO extends ThinkUpUnitTestCase {
         $vals['pub_date']='3/1/2010';
         $vals['source']='web';
         $vals['network']= 'twitter';
+        $vals['is_protected'] = 0;
 
         //add post with insufficient location data
         $this->assertEqual($dao->addPost($vals), 1, "Post inserted");
@@ -775,6 +865,7 @@ class TestOfPostMySQLDAO extends ThinkUpUnitTestCase {
         $vals['source']='web';
         $vals['network']= 'twitter';
         $vals['in_reply_to_post_id']= 41;
+        $vals['is_protected'] = 0;
 
         $dao = new PostMySQLDAO();
         $dao->addPost($vals);
@@ -799,6 +890,7 @@ class TestOfPostMySQLDAO extends ThinkUpUnitTestCase {
         $vals['source']='web';
         $vals['network']= 'twitter';
         $vals['in_retweet_of_post_id']= 41;
+        $vals['is_protected'] = 0;
 
         $dao = new PostMySQLDAO();
         $dao->addPost($vals);
@@ -1186,7 +1278,7 @@ class TestOfPostMySQLDAO extends ThinkUpUnitTestCase {
         $this->assertEqual($keys[0], 'Tweetie for Mac');
         $this->assertEqual($keys[1], 'web');
         $this->assertEqual($keys[2], 'Tweet Button');
-        
+
         $this->assertIsA($latest_clients_usage, 'array');
         $this->assertEqual(sizeof($latest_clients_usage), 3);
         $this->assertEqual($latest_clients_usage['Tweetie for Mac'], 8);

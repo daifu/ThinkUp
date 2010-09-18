@@ -10,7 +10,7 @@ interface PostDAO {
      * Get post by ID
      * @param int $post_id
      * @param str $network
-     * @return Post Post with link member variable set, null if post doesn't exist
+     * @return Post Post with optional link member object set, null if post doesn't exist
      */
     public function getPost($post_id, $network);
 
@@ -31,10 +31,10 @@ interface PostDAO {
      * @param int $unit Defaults to km
      * @param bool $public Defaults to false
      * @param int $count Defaults to 350
-     * @return array Posts with author and link objects set
+     * @return array Posts with author object set, and optional link object set
      */
     public function getRepliesToPost($post_id, $network, $order_by = 'default', $unit = 'km', $is_public = false,
-                                     $count = 350);
+    $count = 350);
 
     /**
      * Get retweets of post
@@ -43,10 +43,10 @@ interface PostDAO {
      * @param str $order_by Order of sorting posts
      * @param int $unit Defaults to km
      * @param bool $public Defaults to false
-     * @return array Retweets of post
+     * @return array Retweets of post with optional link object set
      */
-    public function getRetweetsOfPost($post_id, $network = 'twitter', $order_by = 'default', $unit = 'km', 
-                                      $is_public = false);
+    public function getRetweetsOfPost($post_id, $network = 'twitter', $order_by = 'default', $unit = 'km',
+    $is_public = false);
 
     /**
      * Get all related posts (retweets and replies)
@@ -70,9 +70,10 @@ interface PostDAO {
      * @param int $author_id
      * @param int $count
      * @param str $network Defaults to 'twitter'
+     * @param int $page Page number, defaults to 1
      * @return array Question and answer values
      */
-    public function getPostsAuthorHasRepliedTo($author_id, $count, $network = 'twitter');
+    public function getPostsAuthorHasRepliedTo($author_id, $count, $network = 'twitter', $page=1);
 
     /**
      * Get all the back-and-forth posts between two users.
@@ -88,10 +89,10 @@ interface PostDAO {
      * @param int $post_id
      * @param str $network
      * @param str $order_by Order of sorting posts
-     * @param int $unit
+     * @param str $unit 'km' or 'mi'
      * @return array Public posts with author and link objects set
      */
-    public function getPublicRepliesToPost($post_id, $network, $order_by = 'default', $unit = 0);
+    public function getPublicRepliesToPost($post_id, $network, $order_by = 'default', $unit = 'km');
 
     /**
      * Check to see if Post is in database
@@ -135,10 +136,21 @@ interface PostDAO {
      * @param int $author_id
      * @param str  $network
      * @param int $count
+     * @param int $page
      * @param bool $include_replies If true, return posts with in_reply_to_post_id set
      * @return array Posts by author with link set
      */
-    public function getAllPosts($author_id, $network, $count, $include_replies=true);
+    public function getAllPosts($author_id, $network, $count, $page=1, $include_replies=true);
+
+    /**
+     * Get all posts by an author given an author ID
+     * @param int $author_id
+     * @param str  $network
+     * @param int $count
+     * @param bool $include_replies If true, return posts with in_reply_to_post_id set
+     * @return Iterator Posts Iterator
+     */
+    public function getAllPostsIterator($author_id, $network, $count, $include_replies=true);
 
     /**
      * Get all posts by author given the author's username
@@ -177,9 +189,20 @@ interface PostDAO {
      * @param str  $author_username
      * @param int $count
      * @param str $network defaults to "twitter"
+     * @return Iterator PostIterator object
+     */
+    public function getAllMentionsIterator($author_username, $count, $network = "twitter");
+
+    /**
+     * Get a certain number of mentions of a username on a given network
+     * @param str  $author_username
+     * @param int $count
+     * @param str $network defaults to "twitter"
+     * @param int $page Page number, defaults to 1
+     * @param bool $public Public mentions only, defaults to false
      * @return array of Post objects with author and link set
      */
-    public function getAllMentions($author_username, $count, $network = "twitter");
+    public function getAllMentions($author_username, $count, $network = "twitter", $page=1, $public=false);
 
     /**
      * Get all replies to a given user ID
@@ -195,18 +218,30 @@ interface PostDAO {
      * @param int $user_id
      * @param str $network
      * @param int $count
+     * @param int $page Page number, defaults to 1
      * @return array Posts with link object set
      */
-    public function getMostRepliedToPosts($user_id, $network, $count);
+    public function getMostRepliedToPosts($user_id, $network, $count, $page=1);
 
+    /**
+     * Get posts Iterator by a user ordered by reply count desc
+     * @param int $user_id
+     * @param str $network
+     * @param int $count
+     * @return Iterator Posts with link object set
+     */
+    public function getMostRepliedToPostsIterator($user_id, $network, $count);
+    
+    
     /**
      * Get posts by a usre ordered by retweet count desc
      * @param int $user_id
      * @param str $network
      * @param int $count
+     * @param int $page Page number, defaults to 1
      * @return array Posts with link object set
      */
-    public function getMostRetweetedPosts($user_id, $network, $count);
+    public function getMostRetweetedPosts($user_id, $network, $count, $page=1);
 
     /**
      * Get a page of posts by public instances ordered by pub_date desc
@@ -371,10 +406,19 @@ interface PostDAO {
     public function getMostRetweetedPostsInLastWeek($username, $network, $count);
 
     /**
+     * Get specified number of most-retweeted posts by a username on a network
+     * @param str $username
+     * @param str $network
+     * @param int $count
+     * @return array PostIterator
+     */
+    public function getMostRetweetedPostsIterator($username, $network, $count, $days);
+
+    /**
      * Calculate how much each client is used by a user on a specific network
      * @param int $author_id
      * @param string $network
-     * @return array First element of the returned array is an array of all the clients the user used, ever. 
+     * @return array First element of the returned array is an array of all the clients the user used, ever.
      *               The second element is an array of the clients used for the last 25 posts.
      *               Both arrays are sorted by number of use, descending.
      */

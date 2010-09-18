@@ -10,7 +10,7 @@ class RegisterController extends ThinkUpController {
      * Required form submission values
      * @var array
      */
-    var $REQUIRED_PARAMS = array('email', 'pass1', 'pass2', 'full_name', 'user_code');
+    var $REQUIRED_PARAMS = array('email', 'pass1', 'pass2', 'full_name');
     /**
      *
      * @var boolean
@@ -25,7 +25,7 @@ class RegisterController extends ThinkUpController {
 
     public function control(){
         if ($this->isLoggedIn()) {
-            $controller = new PrivateDashboardController(true);
+            $controller = new DashboardController(true);
             return $controller->go();
         } else {
             $this->disableCaching();
