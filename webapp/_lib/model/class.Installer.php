@@ -1,8 +1,31 @@
 <?php
 /**
+ *
+ * ThinkUp/webapp/_lib/model/class.Installer.php
+ *
+ * Copyright (c) 2009-2010 Dwi Widiastuti, Gina Trapani
+ *
+ * LICENSE:
+ *
+ * This file is part of ThinkUp (http://thinkupapp.com).
+ *
+ * ThinkUp is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation, either version 2 of the License, or (at your option) any
+ * later version.
+ *
+ * ThinkUp is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with ThinkUp.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ *
  * Installer
  * A singleton class that doess the heavy lifting of installing ThinkUp.
  *
+ * @license http://www.gnu.org/licenses/gpl.html
+ * @copyright 2009-2010 Dwi Widiastuti, Gina Trapani
  * @author Dwi Widiastuti <admin[at]diazuwi[dot]web[dot]id>
  * @author Gina Trapani <ginatrapani[at]gmail[dot]com>
  */
@@ -145,13 +168,13 @@ class Installer {
     }
 
     /**
-     * Check GD and cURL
+     * Check GD, cURL and PDO extensions are loaded
      *
-     * @param array $libs can be used for testing for failing
+     * @param array $libs For use in tests
      * @return array
      */
     public function checkDependency($libs = array()) {
-        $ret = array('curl' => false, 'gd' => false);
+        $ret = array('curl'=>false, 'gd'=>false, 'pdo'=>false, 'pdo_mysql'=>false);
         // check curl
         if ( extension_loaded('curl') && function_exists('curl_exec') ) {
             $ret['curl'] = true;
@@ -159,6 +182,14 @@ class Installer {
         // check GD
         if ( extension_loaded('gd') && function_exists('gd_info') ) {
             $ret['gd'] = true;
+        }
+        // check PDO
+        if ( extension_loaded('pdo') ) {
+            $ret['pdo'] = true;
+        }
+        // check PDO MySQL
+        if ( extension_loaded('pdo_mysql') ) {
+            $ret['pdo_mysql'] = true;
         }
         // when testing
         if ( defined('TESTS_RUNNING') && TESTS_RUNNING && !empty($libs) ) {
@@ -583,16 +614,18 @@ class Installer {
             'db_name' => $db_config['db_name'],
             'db_socket' => $db_config['db_socket'],
             'db_port' => $db_config['db_port'],
-            'table_prefix' => $db_config['table_prefix']
+            'table_prefix' => $db_config['table_prefix'],
+            'GMT_offset' => $db_config['GMT_offset'],
+            'timezone' => $db_config['timezone']
         );
 
         // read sample configuration file and replace some lines
         $sample_config = file($sample_config_filename);
         foreach ($sample_config as $line_num => $line) {
-            if (preg_match('/\[\'([a-z0-9_]+)\'\]/', $line, $regs)) {
+            if (preg_match('/\[\'([a-zA-Z0-9_]+)\'\]/', $line, $regs)) {
                 $what = $regs[1];
                 if (isset($new_config[$what])) {
-                    $sample_config[$line_num] = preg_replace('/=.*;(.*)/', "= '" . $new_config[$what] . "';\\1", 
+                    $sample_config[$line_num] = preg_replace('/=.*;(.*)/', "= '" . $new_config[$what] . "';\\1",
                     $sample_config[$line_num]);
                 }
             }

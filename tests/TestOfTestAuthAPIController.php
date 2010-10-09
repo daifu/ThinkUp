@@ -1,4 +1,25 @@
 <?php
+/**
+ *
+ * ThinkUp/tests/TestOfTestAuthAPIController.php
+ *
+ * Copyright (c) 2009-2010 Gina Trapani, Guillaume Boudreau
+ *
+ * LICENSE:
+ *
+ * This file is part of ThinkUp (http://thinkupapp.com).
+ *
+ * ThinkUp is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation, either version 2 of the License, or (at your option) any
+ * later version.
+ *
+ * ThinkUp is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with ThinkUp.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
 require_once dirname(__FILE__).'/init.tests.php';
 require_once THINKUP_ROOT_PATH.'webapp/_lib/extlib/simpletest/autorun.php';
 require_once THINKUP_ROOT_PATH.'webapp/config.inc.php';
@@ -6,6 +27,8 @@ require_once THINKUP_ROOT_PATH.'webapp/config.inc.php';
 /**
  * Test of TestAuthAPIController
  *
+ * @license http://www.gnu.org/licenses/gpl.html
+ * @copyright 2009-2010 Gina Trapani, Guillaume Boudreau
  * @author Guillaume Boudreau <gboudreau@pommepause.com>
  *
  */
@@ -26,17 +49,23 @@ class TestOfTestAuthAPIController extends ThinkUpUnitTestCase {
 
     public function testControl() {
         $builders = $this->buildData();
+        $config = Config::getInstance();
+        $escaped_site_root_path = str_replace('/', '\/', $config->getValue('site_root_path'));
 
         $controller = new TestAuthAPIController(true);
 
         // No username, no API secret provided
+        // This isn't an API call, so present HTML error output
         $results = $controller->go();
-        $this->assertPattern("/UnauthorizedUserException: Unauthorized API call/", $results);
+        $this->assertPattern('/You must <a href="'.$escaped_site_root_path.
+        'session\/login.php">log in<\/a> to do this./', $results);
 
         // No API secret provided
+        // This isn't an API call, so present HTML error output
         $_GET['un'] = 'me@example.com';
         $results = $controller->go();
-        $this->assertPattern("/UnauthorizedUserException: Unauthorized API call/", $results);
+        $this->assertPattern('/You must <a href="'.$escaped_site_root_path.
+        'session\/login.php">log in<\/a> to do this./', $results);
 
         // Wrong API secret provided
         $_GET['as'] = 'fail_me';
@@ -67,7 +96,8 @@ class TestOfTestAuthAPIController extends ThinkUpUnitTestCase {
         // And just to make sure, if we 'logout', we should be denied access now
         Session::logout();
         $results = $controller->go();
-        $this->assertPattern("/UnauthorizedUserException: Unauthorized API call/", $results);
+        $this->assertPattern('/You must <a href="'.$escaped_site_root_path.
+        'session\/login.php">log in<\/a> to do this./', $results);
     }
 
     public function testGetLoggedInUser() {

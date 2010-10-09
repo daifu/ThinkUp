@@ -1,4 +1,32 @@
 <?php
+/**
+ *
+ * ThinkUp/tests/TestOfGridController.php
+ *
+ * Copyright (c) 2009-2010 Mark Wilkie, Gina Trapani, Guillaume Boudreau
+ *
+ * LICENSE:
+ *
+ * This file is part of ThinkUp (http://thinkupapp.com).
+ *
+ * ThinkUp is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation, either version 2 of the License, or (at your option) any
+ * later version.
+ *
+ * ThinkUp is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with ThinkUp.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ *
+ * @author Mark Wilkie <mark[at]bitterpill[dot]org>
+ * @author Gina Trapani <ginatrapani[at]gmail[dot]com>
+ * @author Guillaume Boudreau <gboudreau[at]pommepause[dot]com>
+ * @license http://www.gnu.org/licenses/gpl.html
+ * @copyright 2009-2010 Mark Wilkie, Gina Trapani, Guillaume Boudreau
+ */
 require_once dirname(__FILE__).'/init.tests.php';
 require_once THINKUP_ROOT_PATH.'webapp/_lib/extlib/simpletest/autorun.php';
 require_once THINKUP_ROOT_PATH.'webapp/config.inc.php';
@@ -87,7 +115,25 @@ class TestOfGridController extends ThinkUpUnitTestCase {
         $ob = json_decode( $json );
         $this->assertEqual($ob->status, 'success');
         $this->assertEqual(count($ob->posts), 3);
-        $this->assertPattern('/"status":"success"/', $results);
+    }
+
+    public function testReplyToSearch() {
+        $builders = $this->buildData();
+        $this->simulateLogin('me@example.com');
+        $_GET['u'] = 'someuser1';
+        $_GET['n'] = 'twitter';
+        $_GET['t'] = '1';
+        $controller = new GridController(true);
+        $this->assertTrue(isset($controller));
+        ob_start();
+        $controller->control();
+        $results = ob_get_contents();
+        ob_end_clean();
+        $json = substr($results, 29, 162);
+        $ob = json_decode( $json );
+        $this->assertEqual($ob->status, 'success');
+        $this->assertEqual(count($ob->posts), 2);
+        $this->assertEqual($ob->posts[0]->text, 'Reply to a post');
     }
 
     public function testNoProfilerOutput() {
@@ -117,27 +163,33 @@ class TestOfGridController extends ThinkUpUnitTestCase {
 
     private function buildData() {
         $owner_builder = FixtureBuilder::build('owners', array('id'=>1, 'email'=>'me@example.com'));
-        
+
         $user_builder = FixtureBuilder::build('users', array('user_id'=>123, 'user_name'=>'someuser1',
         'network'=>'twitter'));
-        
+
         $user_builder2 = FixtureBuilder::build('users', array('user_id'=>1234, 'user_name'=>'someuser2',
         'network'=>'twitter'));
-        
+
         $instance_builder = FixtureBuilder::build('instances', array('id'=>1, 'network_username'=>'someuser1',
         'network'=>'twitter', 'network_user_id' => 123));
-        
+
         $instance_builder2 = FixtureBuilder::build('instances', array('id'=>2, 'network_username'=>'someuser2',
         'network'=>'twitter'));
-        
+
         $owner_instance_builder = FixtureBuilder::build('owner_instances', array('instance_id'=>1, 'owner_id'=>1));
-        
+
         $posts1_builder = FixtureBuilder::build('posts', array('author_username'=>'someuser1','author_user_id' => 123,
         'post_text'=>'@someuser1 My first post', 'network'=>'twitter', 'post_id' => 1));
+
         $posts2_builder = FixtureBuilder::build('posts', array('author_username'=>'someuser1','author_user_id' => 123,
         'post_text'=>'My second @someuser1 post', 'network'=>'twitter', 'post_id' => 2));
+
+        $reply_builder = FixtureBuilder::build('posts', array('post_id' => 3, 'author_username'=>'reply_user',
+        'post_text'=>'Reply to a post', 'network'=>'twitter', 'in_reply_to_post_id' => '1', 
+        'author_user_id'=>'1234'));
+
         //sleep(10000);
         return array($owner_builder, $instance_builder, $owner_instance_builder, $posts1_builder,
-        $posts2_builder, $user_builder, $user_builder2, $instance_builder2);
+        $posts2_builder, $user_builder, $user_builder2, $instance_builder2, $reply_builder);
     }
 }

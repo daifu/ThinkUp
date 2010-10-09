@@ -26,7 +26,11 @@
               {/if}
               <div class="grid_10 omega small gray {if $replies or $retweets}prefix_3 prepend{else}prefix_10{/if}">
                 <img src="{$site_root_path}assets/img/social_icons/{$post->network|get_plugin_path}.png" class="float-l">
+                {if $post->network eq 'twitter'}
+                Posted at <a href="http://twitter.com/{$post->author_username}/statuses/{$post->post_id}">{$post->adj_pub_date}</a>{if $post->source} via {$post->source}{/if}<br>
+                {else}
                 Posted at {$post->adj_pub_date}{if $post->source} via {$post->source}{/if}<br>
+                {/if}
                 {if $post->location}From: {$post->location}{/if}
                 {if $post->is_geo_encoded eq 1}
                 <div>
@@ -37,20 +41,28 @@
                 {/if}
               </div>
             </div>
-            <div class="grid_7 center big-number omega">
-              <div class="bl">
-                <div class="key-stat">
-                  {if $replies}
-                    <h1>{$post->reply_count_cache|number_format}</h1>
-                    <h3>replies in {$post->adj_pub_date|relative_datetime} (<a href="{$site_root_path}post/export.php?u={$post->author_username}&n={$post->network}&post_id={$post->post_id}&type=replies">CSV</a>)</h3>
-                  {else}
-                    <h1><a href="#fwds" name="fwds">{$retweets|@count|number_format}</a>
-                    fwds to<br><a href="#fwds">{$retweet_reach|number_format}</a></h1>
-                    <h3>total reach</h3>
-                  {/if}
+            {if $replies or $retweets}
+              <div class="grid_7 center big-number omega">
+                <div class="bl">
+                  <div class="key-stat">
+                    {if $replies}
+                      <h1>{$post->reply_count_cache|number_format}</h1>
+                      <h3>replies in {$post->adj_pub_date|relative_datetime} (<a href="{$site_root_path}post/export.php?u={$post->author_username}&n={$post->network}&post_id={$post->post_id}&type=replies">CSV</a>)</h3>
+                      {if $logged_in_user}
+                        <a href="#" class="grid_search" title="Search" onclick="return false;">
+                        <img src="{$site_root_path}assets/img/search-icon.gif" id="grid_search_icon"></a>
+                      {/if}
+                    {else}
+                    	{if $retweets}
+                        <h1><a href="#fwds" name="fwds">{$retweets|@count|number_format}</a>
+                        fwds to<br><a href="#fwds">{$retweet_reach|number_format}</a></h1>
+                        <h3>total reach</h3>
+                      {/if}
+                    {/if}
+                  </div>
                 </div>
               </div>
-            </div>
+            {/if}
           </div> <!-- end .clearfix -->
           {if $replies}
             <div class="append_20 clearfix"><br />
@@ -117,5 +129,10 @@
 
   <script type="text/javascript" src="{$site_root_path}assets/js/linkify.js"></script>
   <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"></script>
+  {if $replies && $logged_in_user}
+    {include file="_grid.search.tpl"}
+    <script type="text/javascript">post_username = '{$post->author_username}';</script>
+    <script type="text/javascript" src="{$site_root_path}assets/js/grid_search.js"></script>
+  {/if}
   
 {include file="_footer.tpl"}

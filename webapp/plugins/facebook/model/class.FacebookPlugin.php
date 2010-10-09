@@ -1,4 +1,31 @@
 <?php
+/**
+ *
+ * ThinkUp/webapp/plugins/facebook/model/class.FacebookPlugin.php
+ *
+ * Copyright (c) 2009-2010 Gina Trapani, Mark Wilkie
+ *
+ * LICENSE:
+ *
+ * This file is part of ThinkUp (http://thinkupapp.com).
+ *
+ * ThinkUp is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation, either version 2 of the License, or (at your option) any
+ * later version.
+ *
+ * ThinkUp is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with ThinkUp.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ *
+ * @author Gina Trapani <ginatrapani[at]gmail[dot]com>
+ * @author Mark Wilkie <mark[at]bitterpill[dot]org>
+ * @license http://www.gnu.org/licenses/gpl.html
+ * @copyright 2009-2010 Gina Trapani, Mark Wilkie
+ */
 class FacebookPlugin implements CrawlerPlugin, WebappPlugin {
     public function crawl() {
         $logger = Logger::getInstance();
@@ -21,21 +48,18 @@ class FacebookPlugin implements CrawlerPlugin, WebappPlugin {
             }
             $logger->setUsername($instance->network_username);
             $tokens = $oid->getOAuthTokens($instance->id);
-            $session_key = $tokens['oauth_access_token'];
-
-            $fb = new Facebook($options['facebook_api_key']->option_value,
-            $options['facebook_api_secret']->option_value);
+            $access_token = $tokens['oauth_access_token'];
 
             $id->updateLastRun($instance->id);
-            $crawler = new FacebookCrawler($instance, $fb);
+            $crawler = new FacebookCrawler($instance, $access_token);
             try {
-                $crawler->fetchInstanceUserInfo($instance->network_user_id, $session_key);
-                $crawler->fetchUserPostsAndReplies($instance->network_user_id, $session_key);
+                $crawler->fetchInstanceUserInfo();
+                $crawler->fetchUserPostsAndReplies($instance->network_user_id);
             } catch (Exception $e) {
                 $logger->logStatus('PROFILE EXCEPTION: '.$e->getMessage(), get_class($this));
             }
 
-            $id->save($crawler->instance, $crawler->owner_object->post_count, $logger);
+            $id->save($crawler->instance, 0, $logger);
         }
 
         //crawl Facebook pages
@@ -43,17 +67,13 @@ class FacebookPlugin implements CrawlerPlugin, WebappPlugin {
         foreach ($instances as $instance) {
             $logger->setUsername($instance->network_username);
             $tokens = $oid->getOAuthTokens($instance->id);
-            $session_key = $tokens['oauth_access_token'];
-
-            $fb = new Facebook($options['facebook_api_key']->option_value,
-            $options['facebook_api_secret']->option_value);
+            $access_token = $tokens['oauth_access_token'];
 
             $id->updateLastRun($instance->id);
-            $crawler = new FacebookCrawler($instance, $fb);
+            $crawler = new FacebookCrawler($instance, $access_token);
 
             try {
-                $crawler->fetchPagePostsAndReplies($instance->network_user_id, $instance->network_viewer_id,
-                $session_key);
+                $crawler->fetchPagePostsAndReplies($instance->network_user_id);
             } catch (Exception $e) {
                 $logger->logStatus('PAGE EXCEPTION: '.$e->getMessage(), get_class($this));
             }
@@ -81,19 +101,27 @@ class FacebookPlugin implements CrawlerPlugin, WebappPlugin {
         'getAllPostsIterator', array($instance->network_user_id, $instance->network, GridController::MAX_ROWS), false );
         $alltab->addDataset($alltabds);
         array_push($child_tabs, $alltab);
+
+        // Most replied-to tab
+        $mrttab = new WebappTab("mostreplies", "Most replied-to", "Posts with most replies", $fb_data_tpl);
+        $mrttabds = new WebappTabDataset("most_replied_to_posts", 'PostDAO', "getMostRepliedToPosts",
+        array($instance->network_user_id, $instance->network, 15, '#page_number#'));
+        $mrttab->addDataset($mrttabds);
+        array_push($child_tabs, $mrttab);
+
+        //Questions tab
+        $qtab = new WebappTab("questions", "Inquiries", "Inquiries, or posts with a question mark in them",
+        $fb_data_tpl);
+        $qtabds = new WebappTabDataset("all_facebook_posts", 'PostDAO', "getAllQuestionPosts",
+        array($instance->network_user_id, $instance->network, 15, "#page_number#"));
+        $qtab->addDataset($qtabds);
+        array_push($child_tabs, $qtab);
+
         return $child_tabs;
     }
 
     public function getChildTabsUnderReplies($instance) {
-        $fb_data_tpl = Utils::getPluginViewDirectory('facebook').'facebook.inline.view.tpl';
         $child_tabs = array();
-
-        //All Replies
-        $artab = new WebappTab("all_facebook_replies", "Replies", "Replies to your Facebook posts", $fb_data_tpl);
-        $artabds = new WebappTabDataset("all_facebook_replies", 'PostDAO', "getAllReplies",
-        array($instance->network_user_id, $instance->network, 15, '#page_number'));
-        $artab->addDataset($artabds);
-        array_push($child_tabs, $artab);
         return $child_tabs;
     }
 

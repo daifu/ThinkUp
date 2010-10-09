@@ -1,9 +1,32 @@
 <?php
 /**
+ *
+ * ThinkUp/webapp/plugins/twitter/model/class.TwitterPlugin.php
+ *
+ * Copyright (c) 2009-2010 Gina Trapani
+ *
+ * LICENSE:
+ *
+ * This file is part of ThinkUp (http://thinkupapp.com).
+ *
+ * ThinkUp is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation, either version 2 of the License, or (at your option) any
+ * later version.
+ *
+ * ThinkUp is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with ThinkUp.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ *
  * Twitter Plugin
  *
  * Twitter crawler and webapp plugin retrieves data from Twitter and displays it.
  *
+ * @license http://www.gnu.org/licenses/gpl.html
+ * @copyright 2009-2010 Gina Trapani
  * @author Gina Trapani <ginatrapani[at]gmail[dot]com>
  *
  */
@@ -31,6 +54,8 @@ class TwitterPlugin implements CrawlerPlugin, WebappPlugin {
             $logger->setUsername($instance->network_username);
             $tokens = $oid->getOAuthTokens($instance->id);
             $noauth = true;
+            $num_twitter_errors =
+            isset($options['num_twitter_errors']) ? $options['num_twitter_errors']->option_value : null;
             if (isset($tokens['oauth_access_token']) && $tokens['oauth_access_token'] != ''
             && isset($tokens['oauth_access_token_secret']) && $tokens['oauth_access_token_secret'] != '') {
                 $noauth = false;
@@ -40,12 +65,14 @@ class TwitterPlugin implements CrawlerPlugin, WebappPlugin {
                 $api = new CrawlerTwitterAPIAccessorOAuth('NOAUTH', 'NOAUTH',
                 $options['oauth_consumer_key']->option_value,
                 $options['oauth_consumer_secret']->option_value,
-                $instance, $options['archive_limit']->option_value);
+                $instance, $options['archive_limit']->option_value,
+                $num_twitter_errors);
             } else {
                 $api = new CrawlerTwitterAPIAccessorOAuth($tokens['oauth_access_token'],
                 $tokens['oauth_access_token_secret'], $options['oauth_consumer_key']->option_value,
                 $options['oauth_consumer_secret']->option_value,
-                $instance, $options['archive_limit']->option_value);
+                $instance, $options['archive_limit']->option_value,
+                $num_twitter_errors);
             }
 
             $crawler = new TwitterCrawler($instance, $api);
@@ -110,6 +137,14 @@ class TwitterPlugin implements CrawlerPlugin, WebappPlugin {
         'getAllPostsIterator', array($instance->network_user_id, 'twitter', GridController::MAX_ROWS) );
         $alltab->addDataset($alltabds);
         array_push($child_tabs, $alltab);
+
+        //Questions tab
+        $qtab = new WebappTab("tweets-questions", "Inquiries", "Inquiries, or tweets with a question mark in them",
+        $twitter_data_tpl);
+        $qtabds = new WebappTabDataset("all_tweets", 'PostDAO', "getAllQuestionPosts",
+        array($instance->network_user_id, 'twitter', 15, "#page_number#"));
+        $qtab->addDataset($qtabds);
+        array_push($child_tabs, $qtab);
 
         // Most replied-to tab
         $mrttab = new WebappTab("tweets-mostreplies", "Most replied-to", "Tweets with most replies", $twitter_data_tpl);
@@ -223,8 +258,8 @@ class TwitterPlugin implements CrawlerPlugin, WebappPlugin {
         if (Session::isLoggedIn()) {
             //Former Friends
             $fftab = new WebappTab("friends-former", "Former", '', $twitter_data_tpl);
-            $fftabds = new WebappTabDataset("people", 'FollowDAO', "getFormerFollowees", array($instance->network_user_id,
-        'twitter', 15));
+            $fftabds = new WebappTabDataset("people", 'FollowDAO', "getFormerFollowees", array(
+            $instance->network_user_id, 'twitter', 15));
             $fftab->addDataset($fftabds);
             array_push($child_tabs, $fftab);
 
@@ -279,8 +314,8 @@ class TwitterPlugin implements CrawlerPlugin, WebappPlugin {
         if (Session::isLoggedIn()) {
             //Former followers
             $fftab = new WebappTab("followers-former", "Former", '', $twitter_data_tpl);
-            $fftabds = new WebappTabDataset("people", 'FollowDAO', "getFormerFollowers", array($instance->network_user_id,
-        'twitter', 15));
+            $fftabds = new WebappTabDataset("people", 'FollowDAO', "getFormerFollowers", array(
+            $instance->network_user_id, 'twitter', 15));
             $fftab->addDataset($fftabds);
             array_push($child_tabs, $fftab);
         }
@@ -322,5 +357,19 @@ class TwitterPlugin implements CrawlerPlugin, WebappPlugin {
         array_push($child_tabs, $ptab);
 
         return $child_tabs;
+    }
+
+    /**
+     * Defines the ordering of replies in the post page (/post/?t=...)
+     *
+     * @param $order_by Order by distance ('location') or not ('default')
+     * @return string Ordering, to be used in a SQL 'ORDER BY' statement
+     */
+    public static function repliesOrdering($order_by) {
+        if ($order_by == 'location') {
+            return "geo_status, reply_retweet_distance, is_reply_by_friend DESC, follower_count DESC";
+        } else {
+            return "is_reply_by_friend DESC, follower_count DESC";
+        }
     }
 }

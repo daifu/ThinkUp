@@ -1,9 +1,32 @@
 <?php
 /**
+ *
+ * ThinkUp/webapp/_lib/controller/class.DashboardController.php
+ *
+ * Copyright (c) 2009-2010 Gina Trapani, Mark Wilkie
+ *
+ * LICENSE:
+ *
+ * This file is part of ThinkUp (http://thinkupapp.com).
+ *
+ * ThinkUp is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation, either version 2 of the License, or (at your option) any
+ * later version.
+ *
+ * ThinkUp is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with ThinkUp.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ *
  * Dashboard controller
  *
  * The main controller which displays a given view for a give instance user.
  *
+ * @license http://www.gnu.org/licenses/gpl.html
+ * @copyright 2009-2010 Gina Trapani, Mark Wilkie
  * @author Gina Trapani <ginatrapani[at]gmail[dot]com>
  *
  */
@@ -99,6 +122,7 @@ class DashboardController extends ThinkUpController {
             foreach ($tab->datasets as $dataset) {
                 if (array_search('#page_number#', $dataset->method_params) !== false) { //there's paging
                     $this->addToView('next_page', $page+1);
+                    $this->addToView('last_page', $page-1);
                 }
                 $this->addToView($dataset->name, $dataset->retrieveDataset($page));
                 if(Session::isLoggedIn() && $dataset->isSearchable()) {
@@ -164,27 +188,19 @@ class DashboardController extends ThinkUpController {
 
             $post_dao = DAOFactory::getDAO('PostDAO');
             //posts
-            $recent_posts = $post_dao->getAllPosts($this->instance->network_user_id, $this->instance->network, 5, true);
+            $recent_posts = $post_dao->getAllPosts($this->instance->network_user_id, $this->instance->network, 3, true);
             $this->addToView('recent_posts', $recent_posts);
-            $most_replied_to_alltime = $post_dao->getMostRepliedToPosts($this->instance->network_user_id,
-            $this->instance->network, 5);
-            $this->addToView('most_replied_to_alltime', $most_replied_to_alltime);
-            $most_retweeted_alltime = $post_dao->getMostRetweetedPosts($this->instance->network_user_id,
-            $this->instance->network, 5);
-            $this->addToView('most_retweeted_alltime', $most_retweeted_alltime);
             $most_replied_to_1wk = $post_dao->getMostRepliedToPostsInLastWeek($this->instance->network_username,
             $this->instance->network, 5);
             $this->addToView('most_replied_to_1wk', $most_replied_to_1wk);
             $most_retweeted_1wk = $post_dao->getMostRetweetedPostsInLastWeek($this->instance->network_username,
             $this->instance->network, 5);
             $this->addToView('most_retweeted_1wk', $most_retweeted_1wk);
-            $conversations = $post_dao->getPostsAuthorHasRepliedTo($this->instance->network_user_id, 5);
-            $this->addToView('conversations', $conversations);
 
             //follows
             $follow_dao = DAOFactory::getDAO('FollowDAO');
             $least_likely_followers = $follow_dao->getLeastLikelyFollowers($this->instance->network_user_id, 'twitter',
-            16);
+            14);
             $this->addToView('least_likely_followers', $least_likely_followers);
 
             //follower count history

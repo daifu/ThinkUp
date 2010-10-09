@@ -6,6 +6,8 @@
 		As an administrator you can see all accounts in the system.</p>
 	</div>
     {/if}
+    
+    {include file="_usermessage.tpl"}
 
     {if count($owner_instances) > 0 }
     <h2 class="subhead">Facebook User Accounts</h2>
@@ -15,7 +17,7 @@
             <a href="{$site_root_path}index.php?u={$i->network_username|urlencode}&n={$i->network|urlencode}">{$i->network_username}</a> 
         </div>
         <div class="grid_8">
-            <span id="div{$i->id}"><input type="submit" name="submit" id="{$i->id}" class="tt-button ui-state-default ui-priority-secondary ui-corner-all {if $i->is_public}btnPriv{else}btnPub{/if}" value="{if $i->is_public}remove from public timeline{else}include on public timeline{/if}" /></span>
+            <span id="div{$i->id}"><input type="submit" name="submit" id="{$i->id}" class="tt-button ui-state-default ui-priority-secondary ui-corner-all {if $i->is_public}btnPriv{else}btnPub{/if}" value="{if $i->is_public}set private{else}set public{/if}" /></span>
         </div>
         <div class="grid_7">
             <span id="divactivate{$i->id}"><input type="submit" name="submit" id="{$i->id}" class="tt-button ui-state-default ui-priority-secondary ui-corner-all {if $i->is_active}btnPause{else}btnPlay{/if}" value="{if $i->is_active}pause crawling{else}start crawling{/if}" /></span>
@@ -38,7 +40,7 @@
             <a href="{$site_root_path}index.php?u={$i->network_username|urlencode}&n={$i->network|urlencode}">{$i->network_username}</a> 
         </div>
         <div class="grid_8">
-            <span id="div{$i->id}"><input type="submit" name="submit" class="tt-button ui-state-default ui-priority-secondary ui-corner-all {if $i->is_public}btnPriv{else}btnPub{/if}" id="{$i->id}" value="{if $i->is_public}remove from public timeline{else}include on public timeline{/if}" /></span>
+            <span id="div{$i->id}"><input type="submit" name="submit" class="tt-button ui-state-default ui-priority-secondary ui-corner-all {if $i->is_public}btnPriv{else}btnPub{/if}" id="{$i->id}" value="{if $i->is_public}set private{else}set public{/if}" /></span>
         </div>
         <div class="grid_7">
             <span id="divactivate{$i->id}"><input type="submit" name="submit" class="tt-button ui-state-default ui-priority-secondary ui-corner-all {if $i->is_active}btnPause{else}btnPlay{/if}" id="{$i->id}" value="{if $i->is_active}pause crawling{else}start crawling{/if}" /></span>
@@ -47,7 +49,7 @@
     <br />
     {/if}
 
-<h2 class="subhead">Add a Facebook Page</h2>
+
 {foreach from=$owner_instances key=iid item=i name=foo}
   {assign var='facebook_user_id' value=$i->network_user_id}
   {if $user_pages.$facebook_user_id}
@@ -64,7 +66,7 @@
             <input type="hidden" name ="owner_id" value="{$owner->id}" />
             <select name="facebook_page_id">
                 {foreach from=$user_pages.$facebook_user_id key=page_id item=page name=p}
-                    <option value="{$page.json|escape:'html'}">{if strlen($page.name)>27}{$page.name|substr:0:27}...{else}{$page.name}{/if}</option> <br />
+                    <option value="{$page->id}">{if strlen($page->name)>27}{$page->name|substr:0:27}...{else}{$page->name}{/if}</option> <br />
                 {/foreach}
              </select>
              {/if}
@@ -82,54 +84,22 @@ addPage"  id="{$i->network_username}" value="add page" /></span>
 <div id="add-account-div" style="display: none;">
     {if $fbconnect_link}<h2 class="subhead">Add a Facebook User</h2>{$fbconnect_link}{/if}
     <div>
-        <fb:prompt-permission perms="read_stream,publish_stream,offline_access" next_fbjs="save_session()">
-            Click here to grant offline access!
-        </fb:prompt-permission>
     </div>
 </div>
-<script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript">
-</script>
-<script type="text/javascript">
-                FB.init("{$fb_api_key}", "{$site_root_path}plugins/facebook/xd_receiver.php", {literal}{
-                    permsToRequestOnConnect: "read_stream,offline_access",
-                });
-</script>
-<script>
-    function save_session(){
-        session = FB.Facebook.apiClient.get_session();
-        var sessionKey = session.session_key;
-        $.ajax({
-            type: "GET",
-            url: '{/literal}{$site_root_path}{literal}plugins/facebook/auth.php',
-            data: {
-                sessionKey: sessionKey
-            },
-            dataType: "json",
-            async: false,
-            time: 10,
-            success: function(msg){
-            
-            }
-        })
-    };
-</script>
 
-<script src="{/literal}{$site_root_path}{literal}plugins/facebook/assets/js/fbconnect.js" type="text/javascript">
-</script>
-<script type="text/javascript">
-    window.onload = function(){
-        facebook_onload(true);
-    };
-</script>
-{/literal}
+<div id="contact-admin-div" style="display: none;">
+{include file="_plugin.admin-request.tpl"}
+</div>
+
 {if $options_markup}
-<div style="border: solid gray 1px;padding:10px;margin:20px">
+<div {if $user_is_admin}style="border: solid gray 1px;padding:10px;margin:20px"{/if}>
+{if $user_is_admin}
 <h2 class="subhead">Configure the Facebook Plugin</h2>
 <ol style="margin-left:40px">
 <li><a href="http://developers.facebook.com/setup/">Create a ThinkUp Facebook application.</a></li>
 <li>Set the Web Site &gt; Site URL to <pre>http://{$smarty.server.SERVER_NAME}{if $smarty.server.SERVER_PORT != '80'}:{$smarty.server.SERVER_PORT}{/if}{$site_root_path}</pre></li>
-<li>Set the Advanced &gt; Deauthorize Callback to <pre>http://{$smarty.server.SERVER_NAME}{if $smarty.server.SERVER_PORT != '80'}:{$smarty.server.SERVER_PORT}{/if}{$site_root_path}account/?p=facebook</pre></li>
-<li>Enter the Facebook-provided API Key and Application Secret here.</li></ol>
+<li>Enter the Facebook-provided API Key, Application Secret and Application ID here.</li></ol>
+{/if}
 <p>
 {$options_markup}
 </p>
@@ -137,8 +107,12 @@ addPage"  id="{$i->network_username}" value="add page" /></span>
 
 {literal}
 <script type="text/javascript">
-if( option_elements['facebook_api_key']['value'] && option_elements['facebook_api_secret']['value']) {
+if( required_values_set ) {
     $('#add-account-div').show();
+} else {
+    if(! is_admin) {
+        $('#contact-admin-div').show();
+    }
 }
 {/literal}
 </script>

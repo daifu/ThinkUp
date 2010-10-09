@@ -3,7 +3,7 @@
     <div class="grid_1 alpha">&nbsp;</div>
     <div class="grid_3 right">name</div>
     <div class="grid_3 right">date</div>
-    <div class="grid_13">post</div>
+    <div class="grid_11">post</div>
     <div class="grid_2 center omega">replies</div>
   </div>
 {/if}
@@ -18,7 +18,7 @@
   <div class="grid_3 right small">
     <a href="http://twitter.com/{$l->container_post->author_username}/post/{$l->container_post->post_id}">{$l->container_post->adj_pub_date|relative_datetime}</a>
   </div>
-  <div class="grid_13">
+  <div class="grid_11">
     {if $l->is_image}
       <a href="{$l->url}"><div class="pic"><img src="{$l->expanded_url}" /></div></a>
     {else}
@@ -38,7 +38,7 @@
     </p>
     <h3></h3>
     {if $l->container_post->location}
-      <h4 class="tweetstamp">{$l->container_post->location}</h4>
+      <div class="small gray">{$l->container_post->location}</div>
     {/if}
   </div>
   <div class="grid_2 center omega"> 

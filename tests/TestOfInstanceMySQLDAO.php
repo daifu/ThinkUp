@@ -1,4 +1,33 @@
 <?php
+/**
+ *
+ * ThinkUp/tests/TestOfInstanceMySQLDAO.php
+ *
+ * Copyright (c) 2009-2010 Gina Trapani, Guillaume Boudreau, Christoffer Viken, Mark Wilkie
+ *
+ * LICENSE:
+ *
+ * This file is part of ThinkUp (http://thinkupapp.com).
+ *
+ * ThinkUp is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation, either version 2 of the License, or (at your option) any
+ * later version.
+ *
+ * ThinkUp is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with ThinkUp.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ *
+ * @author Gina Trapani <ginatrapani[at]gmail[dot]com>
+ * @author Guillaume Boudreau <gboudreau[at]pommepause[dot]com>
+ * @author Christoffer Viken <christoffer[at]viken[dot]me>
+ * @author Mark Wilkie <mark[at]bitterpill[dot]org>
+ * @license http://www.gnu.org/licenses/gpl.html
+ * @copyright 2009-2010 Gina Trapani, Guillaume Boudreau, Christoffer Viken, Mark Wilkie
+ */
 require_once dirname(__FILE__).'/init.tests.php';
 require_once THINKUP_ROOT_PATH.'webapp/_lib/extlib/simpletest/autorun.php';
 require_once THINKUP_ROOT_PATH.'webapp/config.inc.php';
@@ -425,7 +454,7 @@ class TestOfInstanceMySQLDAO extends ThinkUpUnitTestCase {
                 $reply_to = 'NULL';
             }
             $builders[] = FixtureBuilder::build('posts', array('post_id'=>$postid, 'author_user_id'=>$sender,
-            'post_text'=>$data, 'pub_date'=>'-'.$number.'hr', 'in_reply_to_user_id'=>$reply_to));
+            'post_text'=>$data, 'pub_date'=>'-'.$number.'h', 'in_reply_to_user_id'=>$reply_to));
             if($sender == 10){
                 $posts++;
             }
@@ -510,8 +539,9 @@ class TestOfInstanceMySQLDAO extends ThinkUpUnitTestCase {
         $this->assertEqual($result->network_viewer_id, 10);
 
         // Check if the stats were correctly calculated and saved
-        $this->assertEqual($result->posts_per_day, $posts);
-        $this->assertEqual($result->posts_per_week, $posts);
+        $posts_per = ($posts > 25) ? 25 : $posts; // post per are limited to a max of 25, see getInstanceUserStats()
+        $this->assertEqual($result->posts_per_day, $posts_per);
+        $this->assertEqual($result->posts_per_week, $posts_per);
         $this->assertEqual($result->percentage_replies, round($replies / $posts * 100, 2));
         $this->assertEqual($result->percentage_links, round($links / $posts * 100, 2));
 
@@ -526,7 +556,7 @@ class TestOfInstanceMySQLDAO extends ThinkUpUnitTestCase {
 
         //Load the instance
         $instance = $this->DAO->getByUsername('jack');
-        
+
         // This will make the test fail if PHP warnings are generated when an instance has no posts
         $this->DAO->save($instance, 1024);
     }

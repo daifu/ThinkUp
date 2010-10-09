@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>{if $controller_title}{$controller_title} | {/if}{$app_title}</title>
-  <link rel="shortcut icon" type="image/x-icon" href="{$site_root_path}assets/img/favicon.ico">
+  <link rel="shortcut icon" type="image/x-icon" href="{$site_root_path}assets/img/favicon.png">
   <link type="text/css" rel="stylesheet" href="{$site_root_path}assets/css/base.css">
   <link type="text/css" rel="stylesheet" href="{$site_root_path}assets/css/positioning.css">
   <link type="text/css" rel="stylesheet" href="{$site_root_path}assets/css/style.css">
@@ -65,6 +65,8 @@
   margin: 8px auto;
   height: 1px;
   }
+  .grid_4 a, .grid_10 a {color:#6184b5;}
+  .thinkup-canvas a {color:#6184b5;}
   </style>
   {/literal}
 </head>
